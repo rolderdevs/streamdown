@@ -1,5 +1,5 @@
 {
-  "name": "streamdown",
+  "name": "@rolder/streamdown",
   "version": "1.4.0",
   "type": "module",
   "module": "./index.tsx",
@@ -33,7 +33,6 @@
     "jsdom": "^27.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "tsup": "^8.5.0",
     "unified": "^11.0.5",
     "vitest": "^3.2.4"
   },
@@ -46,7 +45,6 @@
   "dependencies": {
     "clsx": "^2.1.1",
     "katex": "^0.16.22",
-    "lucide-react": "^0.542.0",
     "marked": "^16.2.1",
     "mermaid": "^11.11.0",
     "react-markdown": "^10.1.0",

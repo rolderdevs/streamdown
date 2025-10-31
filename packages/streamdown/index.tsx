@@ -1,6 +1,5 @@
 'use client';
 
-import { Box } from '@mantine/core';
 import type { MermaidConfig } from 'mermaid';
 import { createContext, memo, useEffect, useId, useMemo } from 'react';
 import ReactMarkdown, { type Options } from 'react-markdown';
@@ -14,10 +13,9 @@ import type { Pluggable } from 'unified';
 import { components as defaultComponents } from './lib/components';
 import { parseMarkdownIntoBlocks } from './lib/parse-blocks';
 import { parseIncompleteMarkdown } from './lib/parse-incomplete-markdown';
-import { cn } from './lib/utils';
 
-// import 'katex/dist/katex.min.css';
 import './index.css';
+import { Box } from '@mantine/core';
 
 export type { MermaidConfig } from 'mermaid';
 export { defaultUrlTransform } from 'react-markdown';
@@ -50,7 +48,7 @@ export const defaultRehypePlugins: Record<string, Pluggable> = {
     },
   ],
   raw: rehypeRaw,
-  katex: [rehypeKatex, { errorColor: 'var(--color-muted-foreground)' }],
+  katex: [rehypeKatex, { errorColor: 'var(--mantine-color-dimmed)' }],
 } as const;
 
 export const defaultRemarkPlugins: Record<string, Pluggable> = {
@@ -124,20 +122,24 @@ export const Streamdown = memo(
     );
 
     useEffect(() => {
-      if (Array.isArray(rehypePlugins) && rehypePlugins.some(plugin => Array.isArray(plugin) ? plugin[0] === rehypeKatex : plugin === rehypeKatex)) {
-        // @ts-expect-error
-        import("katex/dist/katex.min.css");
+      if (
+        Array.isArray(rehypePlugins) &&
+        rehypePlugins.some((plugin) =>
+          Array.isArray(plugin)
+            ? plugin[0] === rehypeKatex
+            : plugin === rehypeKatex,
+        )
+      ) {
+        import('katex/dist/katex.min.css');
       }
-    }, []);
-
-    //className="space-y-2"
+    }, [rehypePlugins]);
 
     return (
       <ShikiThemeContext.Provider value={shikiTheme}>
         <MermaidConfigContext.Provider value={mermaidConfig}>
           <ControlsContext.Provider value={controls}>
             <StreamdownRuntimeContext.Provider value={{ isAnimating }}>
-              <div className={cn("space-y-4", className)}>
+              <Box mt={16} className={className}>
                 {blocks.map((block, index) => (
                   <Block
                     components={{
@@ -156,7 +158,7 @@ export const Streamdown = memo(
                     {...props}
                   />
                 ))}
-              </div>
+              </Box>
             </StreamdownRuntimeContext.Provider>
           </ControlsContext.Provider>
         </MermaidConfigContext.Provider>
@@ -166,6 +168,6 @@ export const Streamdown = memo(
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
     prevProps.shikiTheme === nextProps.shikiTheme &&
-    prevProps.isAnimating === nextProps.isAnimating
+    prevProps.isAnimating === nextProps.isAnimating,
 );
 Streamdown.displayName = 'Streamdown';

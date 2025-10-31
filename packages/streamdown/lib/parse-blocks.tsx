@@ -1,5 +1,4 @@
-import type { Token } from "marked";
-import { Lexer } from "marked";
+import { Lexer } from 'marked';
 
 export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
   // Check if the markdown contains footnotes (references or definitions)
@@ -31,7 +30,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
       mergedBlocks[mergedBlocks.length - 1] += currentBlock;
 
       // Check if this token closes an HTML tag
-      if (token.type === "html") {
+      if (token.type === 'html') {
         const closingTagMatch = currentBlock.match(/<\/(\w+)>/);
         if (closingTagMatch) {
           const closingTag = closingTagMatch[1];
@@ -45,7 +44,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
     }
 
     // Check if this is an opening HTML block tag
-    if (token.type === "html" && token.block) {
+    if (token.type === 'html' && token.block) {
       const openingTagMatch = currentBlock.match(/<(\w+)[\s>]/);
       if (openingTagMatch) {
         const tagName = openingTagMatch[1];
@@ -60,7 +59,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
 
     // Math block merging logic (existing)
     // Check if this is a standalone $$ that might be a closing delimiter
-    if (currentBlock.trim() === "$$" && mergedBlocks.length > 0) {
+    if (currentBlock.trim() === '$$' && mergedBlocks.length > 0) {
       const previousBlock = mergedBlocks.at(-1);
 
       if (!previousBlock) {
@@ -69,7 +68,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
       }
 
       // Check if the previous block starts with $$ but doesn't end with $$
-      const prevStartsWith$$ = previousBlock.trimStart().startsWith("$$");
+      const prevStartsWith$$ = previousBlock.trimStart().startsWith('$$');
       const prevDollarCount = (previousBlock.match(/\$\$/g) || []).length;
 
       // If previous block has odd number of $$ and starts with $$, merge them
@@ -80,7 +79,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
     }
 
     // Check if current block ends with $$ and previous block started with $$ but didn't close
-    if (mergedBlocks.length > 0 && currentBlock.trimEnd().endsWith("$$")) {
+    if (mergedBlocks.length > 0 && currentBlock.trimEnd().endsWith('$$')) {
       const previousBlock = mergedBlocks.at(-1);
 
       if (!previousBlock) {
@@ -88,7 +87,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
         continue;
       }
 
-      const prevStartsWith$$ = previousBlock.trimStart().startsWith("$$");
+      const prevStartsWith$$ = previousBlock.trimStart().startsWith('$$');
       const prevDollarCount = (previousBlock.match(/\$\$/g) || []).length;
       const currDollarCount = (currentBlock.match(/\$\$/g) || []).length;
 
@@ -97,7 +96,7 @@ export const parseMarkdownIntoBlocks = (markdown: string): string[] => {
       if (
         prevStartsWith$$ &&
         prevDollarCount % 2 === 1 &&
-        !currentBlock.trimStart().startsWith("$$") &&
+        !currentBlock.trimStart().startsWith('$$') &&
         currDollarCount === 1
       ) {
         mergedBlocks[mergedBlocks.length - 1] = previousBlock + currentBlock;

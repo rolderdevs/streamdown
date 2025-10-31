@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { ActionIcon, Button } from '@mantine/core';
 import { IconCheck, IconCopy, IconDownload } from '@tabler/icons-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { StreamdownRuntimeContext } from '..';
@@ -252,18 +252,20 @@ export const TableDownloadButton = ({
   };
 
   return (
-    <button
-      className={cn(
-        "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+    <ActionIcon
+      className={
+        // cn(
+        // "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
-      )}
+        // )
+      }
       disabled={isAnimating}
       onClick={downloadTableData}
       title={`Скопировать таблицу как ${format.toUpperCase()}`}
-      type="button"
+      // type="button"
     >
       {children ?? <IconDownload size={14} />}
-    </button>
+    </ActionIcon>
   );
 };
 
@@ -336,18 +338,20 @@ export const TableDownloadDropdown = ({
       // className={css({ pos: 'relative' })}
       ref={dropdownRef}
     >
-      <button
-        className={cn(
-          "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+      <ActionIcon
+        className={
+          // cn(
+          // "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
           className
-        )}
+          // )
+        }
         disabled={isAnimating}
         onClick={() => setIsOpen(!isOpen)}
         title="Скопировать таблицу"
-        type="button"
+        // type="button"
       >
         {children ?? <IconDownload size={14} />}
-      </button>
+      </ActionIcon>
       {isOpen && (
         //"absolute top-full right-0 z-10 mt-1 min-w-[120px] rounded-md border border-border bg-background shadow-lg"
         <div

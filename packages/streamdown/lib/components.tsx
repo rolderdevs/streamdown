@@ -472,11 +472,11 @@ const MemoSub = memo<SubProps>(
 );
 MemoSub.displayName = 'MarkdownSub';
 
-type SectionProps = WithNode<JSX.IntrinsicElements["section"]>;
+type SectionProps = WithNode<JSX.IntrinsicElements['section']>;
 const MemoSection = memo<SectionProps>(
   ({ children, className, node, ...props }: SectionProps) => {
     // Check if this is a footnotes section
-    const isFootnotesSection = "data-footnotes" in props;
+    const isFootnotesSection = 'data-footnotes' in props;
 
     if (isFootnotesSection) {
       // Filter out empty footnote list items (those with only the backref link)
@@ -486,9 +486,10 @@ const MemoSection = memo<SectionProps>(
       const isEmptyFootnote = (listItem: React.ReactNode): boolean => {
         if (!isValidElement(listItem)) return false;
 
-        const itemChildren = Array.isArray(listItem.props.children)
-          ? listItem.props.children
-          : [listItem.props.children];
+        const props = listItem.props as Record<string, unknown>;
+        const itemChildren = Array.isArray(props.children)
+          ? props.children
+          : [props.children];
 
         // Check if all children are either whitespace or backref links
         let hasContent = false;
@@ -497,34 +498,39 @@ const MemoSection = memo<SectionProps>(
         for (const itemChild of itemChildren) {
           if (!itemChild) continue;
 
-          if (typeof itemChild === "string") {
+          if (typeof itemChild === 'string') {
             // If there's non-whitespace text, it has content
-            if (itemChild.trim() !== "") {
+            if (itemChild.trim() !== '') {
               hasContent = true;
             }
           } else if (isValidElement(itemChild)) {
+            const childProps = itemChild.props as Record<string, unknown>;
             // Check if it's a backref link
-            if (itemChild.props?.["data-footnote-backref"] !== undefined) {
+            if (childProps?.['data-footnote-backref'] !== undefined) {
               hasBackref = true;
             } else {
               // It's some other element (like <p>), which means it has content
               // But we need to check if the <p> has actual content
-              const grandChildren = Array.isArray(itemChild.props.children)
-                ? itemChild.props.children
-                : [itemChild.props.children];
+              const grandChildren = Array.isArray(childProps.children)
+                ? childProps.children
+                : [childProps.children];
 
               for (const grandChild of grandChildren) {
                 if (
-                  typeof grandChild === "string" &&
-                  grandChild.trim() !== ""
+                  typeof grandChild === 'string' &&
+                  grandChild.trim() !== ''
                 ) {
                   hasContent = true;
                   break;
                 }
                 if (isValidElement(grandChild)) {
+                  const grandChildProps = grandChild.props as Record<
+                    string,
+                    unknown
+                  >;
                   // If it's not a backref link, it's content
                   if (
-                    grandChild.props?.["data-footnote-backref"] === undefined
+                    grandChildProps?.['data-footnote-backref'] === undefined
                   ) {
                     hasContent = true;
                     break;
@@ -546,12 +552,13 @@ const MemoSection = memo<SectionProps>(
 
             // If this is an <ol> containing footnote list items
             if (child.type === MemoOl) {
-              const listChildren = Array.isArray(child.props.children)
-                ? child.props.children
-                : [child.props.children];
+              const childProps = child.props as Record<string, unknown>;
+              const listChildren = Array.isArray(childProps.children)
+                ? childProps.children
+                : [childProps.children];
 
               const filteredListChildren = listChildren.filter(
-                (listItem: React.ReactNode) => !isEmptyFootnote(listItem)
+                (listItem: React.ReactNode) => !isEmptyFootnote(listItem),
               );
 
               // If all footnotes are empty, return null
@@ -563,7 +570,7 @@ const MemoSection = memo<SectionProps>(
               return {
                 ...child,
                 props: {
-                  ...child.props,
+                  ...childProps,
                   children: filteredListChildren,
                 },
               };
@@ -596,9 +603,9 @@ const MemoSection = memo<SectionProps>(
       </section>
     );
   },
-  (p, n) => sameClassAndNode(p, n)
+  (p, n) => sameClassAndNode(p, n),
 );
-MemoSection.displayName = "MarkdownSection";
+MemoSection.displayName = 'MarkdownSection';
 
 const CodeComponent = ({
   node,
@@ -705,7 +712,7 @@ const MemoImg = memo<
 
 MemoImg.displayName = 'MarkdownImg';
 
-type ParagraphProps = WithNode<JSX.IntrinsicElements["p"]>;
+type ParagraphProps = WithNode<JSX.IntrinsicElements['p']>;
 const MemoParagraph = memo<ParagraphProps>(
   ({ children, className, node, ...props }: ParagraphProps) => {
     // Check if the paragraph contains only an image element
@@ -717,30 +724,31 @@ const MemoParagraph = memo<ParagraphProps>(
 
     // Filter out null/undefined/empty values
     const validChildren = childArray.filter(
-      (child) => child !== null && child !== undefined && child !== ""
+      (child) => child !== null && child !== undefined && child !== '',
     );
 
     // Check if there's exactly one child and it's an img element
     if (
       validChildren.length === 1 &&
       isValidElement(validChildren[0]) &&
-      (validChildren[0].props as { node?: MarkdownNode }).node?.tagName ===
-        "img"
+      (validChildren[0].props as { node?: MarkdownNode & { tagName?: string } })
+        .node?.tagName === 'img'
     ) {
       return <>{children}</>;
     }
 
     return (
-      <p className={className} {...props}>
+      <Text className={className} {...props}>
         {children}
-      </p>
+      </Text>
     );
   },
-  (p, n) => sameClassAndNode(p, n)
+  (p, n) => sameClassAndNode(p, n),
 );
-MemoParagraph.displayName = "MarkdownParagraph";
+MemoParagraph.displayName = 'MarkdownParagraph';
 
-export const components: Options["components"] = {
+export const components: Options['components'] = {
+  //@ts-expect-error
   ol: MemoOl,
   li: MemoLi,
   ul: MemoUl,

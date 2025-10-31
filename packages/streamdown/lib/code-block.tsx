@@ -16,10 +16,10 @@ import {
   bundledLanguages,
   createHighlighter,
   type SpecialLanguage,
-} from "shiki";
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
-import { ShikiThemeContext, StreamdownRuntimeContext } from "../index";
-import { cn, save } from "./utils";
+} from 'shiki';
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
+import { ShikiThemeContext, StreamdownRuntimeContext } from '../index';
+import { save } from './utils';
 
 const PRE_TAG_REGEX = /<pre(\s|>)/;
 
@@ -151,15 +151,17 @@ class HighlighterManager {
       ? language
       : this.getFallbackLanguage();
 
-    const light = this.lightHighlighter?.codeToHtml(code, {
-      lang,
-      theme: lightTheme,
-    });
+    const light =
+      this.lightHighlighter?.codeToHtml(code, {
+        lang,
+        theme: lightTheme,
+      }) ?? '';
 
-    const dark = this.darkHighlighter?.codeToHtml(code, {
-      lang,
-      theme: darkTheme,
-    });
+    const dark =
+      this.darkHighlighter?.codeToHtml(code, {
+        lang,
+        theme: darkTheme,
+      }) ?? '';
 
     const addPreClass = (html: string) => {
       if (!preClassName) {
@@ -178,13 +180,13 @@ const highlighterManager = new HighlighterManager();
 export const CodeBlock = ({
   code,
   language,
-  className,
-  children,
+  // className,
+  // children,
   preClassName,
-  ...rest
+  // ...rest
 }: CodeBlockProps) => {
-  const [html, setHtml] = useState<string>('');
-  const [darkHtml, setDarkHtml] = useState<string>('');
+  const [_html, setHtml] = useState<string>('');
+  const [_darkHtml, setDarkHtml] = useState<string>('');
   const mounted = useRef(false);
   const [lightTheme, darkTheme] = useContext(ShikiThemeContext);
 
@@ -213,7 +215,6 @@ export const CodeBlock = ({
         style={{ overflow: 'hidden' }}
         data-code-block-container
         data-language={language}
-        // className={paper()}
       >
         {/*<Box
         my="4"
@@ -623,11 +624,8 @@ export const CodeBlockDownloadButton = ({
   };
 
   return (
-    <button
-      className={cn(
-        "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
+    <Button
+      className={className}
       disabled={isAnimating}
       onClick={downloadCode}
       title="Скачать файл"
@@ -683,11 +681,8 @@ export const CodeBlockCopyButton = ({
   const Icon = isCopied ? IconCheck : IconCopy;
 
   return (
-    <button
-      className={cn(
-        "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
+    <Button
+      className={className}
       disabled={isAnimating}
       onClick={copyToClipboard}
       title="Скопировать в буфер"
