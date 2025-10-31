@@ -1,40 +1,26 @@
 'use client';
 
 import { Box } from '@mantine/core';
-import hardenReactMarkdownImport from 'harden-react-markdown';
 import type { MermaidConfig } from 'mermaid';
-import { createContext, memo, useId, useMemo } from 'react';
+import { createContext, memo, useEffect, useId, useMemo } from 'react';
 import ReactMarkdown, { type Options } from 'react-markdown';
+import { harden } from 'rehype-harden';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
-import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import remarkGfm from 'remark-gfm';
-import type { Options as RemarkMathOptions } from 'remark-math';
 import remarkMath from 'remark-math';
 import type { BundledTheme } from 'shiki';
+import type { Pluggable } from 'unified';
 import { components as defaultComponents } from './lib/components';
 import { parseMarkdownIntoBlocks } from './lib/parse-blocks';
 import { parseIncompleteMarkdown } from './lib/parse-incomplete-markdown';
+import { cn } from './lib/utils';
 
-import 'katex/dist/katex.min.css';
+// import 'katex/dist/katex.min.css';
 import './index.css';
 
 export type { MermaidConfig } from 'mermaid';
-
-type HardenReactMarkdownProps = Options & {
-  defaultOrigin?: string;
-  allowedLinkPrefixes?: string[];
-  allowedImagePrefixes?: string[];
-};
-
-// Handle both ESM and CJS imports
-const hardenReactMarkdown =
-  // biome-ignore lint/suspicious/noExplicitAny: "this is needed."
-  (hardenReactMarkdownImport as any).default || hardenReactMarkdownImport;
-
-// Create a hardened version of ReactMarkdown
-const HardenedMarkdown: ReturnType<typeof hardenReactMarkdown> =
-  hardenReactMarkdown(ReactMarkdown);
+export { defaultUrlTransform } from 'react-markdown';
 
 export type ControlsConfig =
   | boolean
@@ -44,13 +30,33 @@ export type ControlsConfig =
       mermaid?: boolean;
     };
 
-export type StreamdownProps = HardenReactMarkdownProps & {
+export type StreamdownProps = Options & {
   parseIncompleteMarkdown?: boolean;
   className?: string;
   shikiTheme?: [BundledTheme, BundledTheme];
   mermaidConfig?: MermaidConfig;
   controls?: ControlsConfig;
+  isAnimating?: boolean;
 };
+
+export const defaultRehypePlugins: Record<string, Pluggable> = {
+  harden: [
+    harden,
+    {
+      allowedImagePrefixes: ['*'],
+      allowedLinkPrefixes: ['*'],
+      defaultOrigin: undefined,
+      allowDataImages: true,
+    },
+  ],
+  raw: rehypeRaw,
+  katex: [rehypeKatex, { errorColor: 'var(--color-muted-foreground)' }],
+} as const;
+
+export const defaultRemarkPlugins: Record<string, Pluggable> = {
+  gfm: [remarkGfm, {}],
+  math: [remarkMath, { singleDollarTextMath: false }],
+} as const;
 
 export const ShikiThemeContext = createContext<[BundledTheme, BundledTheme]>([
   'github-light' as BundledTheme,
@@ -63,16 +69,19 @@ export const MermaidConfigContext = createContext<MermaidConfig | undefined>(
 
 export const ControlsContext = createContext<ControlsConfig>(true);
 
-type BlockProps = HardenReactMarkdownProps & {
+export type StreamdownRuntimeContextType = {
+  isAnimating: boolean;
+};
+
+export const StreamdownRuntimeContext =
+  createContext<StreamdownRuntimeContextType>({
+    isAnimating: false,
+  });
+
+type BlockProps = Options & {
   content: string;
   shouldParseIncompleteMarkdown: boolean;
 };
-
-const remarkMathOptions: RemarkMathOptions = {
-  singleDollarTextMath: false,
-};
-
-const remarkGfmOptions: RemarkGfmOptions = {};
 
 const Block = memo(
   ({ content, shouldParseIncompleteMarkdown, ...props }: BlockProps) => {
@@ -84,7 +93,7 @@ const Block = memo(
       [content, shouldParseIncompleteMarkdown],
     );
 
-    return <HardenedMarkdown {...props}>{parsedContent}</HardenedMarkdown>;
+    return <ReactMarkdown {...props}>{parsedContent}</ReactMarkdown>;
   },
   (prevProps, nextProps) => prevProps.content === nextProps.content,
 );
@@ -94,17 +103,16 @@ Block.displayName = 'Block';
 export const Streamdown = memo(
   ({
     children,
-    allowedImagePrefixes = ['*'],
-    allowedLinkPrefixes = ['*'],
-    defaultOrigin,
     parseIncompleteMarkdown: shouldParseIncompleteMarkdown = true,
     components,
-    rehypePlugins,
-    remarkPlugins,
+    rehypePlugins = Object.values(defaultRehypePlugins),
+    remarkPlugins = Object.values(defaultRemarkPlugins),
     className,
     shikiTheme = ['github-light', 'github-dark'],
     mermaidConfig,
     controls = true,
+    isAnimating = false,
+    urlTransform = (value) => value,
     ...props
   }: StreamdownProps) => {
     // Parse the children to remove incomplete markdown tokens if enabled
@@ -114,10 +122,13 @@ export const Streamdown = memo(
         parseMarkdownIntoBlocks(typeof children === 'string' ? children : ''),
       [children],
     );
-    const rehypeKatexPlugin = useMemo(
-      () => () => rehypeKatex({ errorColor: 'var(--colors-text-muted)' }),
-      [],
-    );
+
+    useEffect(() => {
+      if (Array.isArray(rehypePlugins) && rehypePlugins.some(plugin => Array.isArray(plugin) ? plugin[0] === rehypeKatex : plugin === rehypeKatex)) {
+        // @ts-expect-error
+        import("katex/dist/katex.min.css");
+      }
+    }, []);
 
     //className="space-y-2"
 
@@ -125,37 +136,28 @@ export const Streamdown = memo(
       <ShikiThemeContext.Provider value={shikiTheme}>
         <MermaidConfigContext.Provider value={mermaidConfig}>
           <ControlsContext.Provider value={controls}>
-            <Box
-              // spaceY={4}
-              className={className}
-              {...props}
-            >
-              {blocks.map((block, index) => (
-                <Block
-                  allowedImagePrefixes={allowedImagePrefixes}
-                  allowedLinkPrefixes={allowedLinkPrefixes}
-                  components={{
-                    ...defaultComponents,
-                    ...components,
-                  }}
-                  content={block}
-                  defaultOrigin={defaultOrigin}
-                  // biome-ignore lint/suspicious/noArrayIndexKey: "required"
-                  key={`${generatedId}-block_${index}`}
-                  rehypePlugins={[
-                    rehypeRaw,
-                    rehypeKatexPlugin,
-                    ...(rehypePlugins ?? []),
-                  ]}
-                  remarkPlugins={[
-                    [remarkGfm, remarkGfmOptions],
-                    [remarkMath, remarkMathOptions],
-                    ...(remarkPlugins ?? []),
-                  ]}
-                  shouldParseIncompleteMarkdown={shouldParseIncompleteMarkdown}
-                />
-              ))}
-            </Box>
+            <StreamdownRuntimeContext.Provider value={{ isAnimating }}>
+              <div className={cn("space-y-4", className)}>
+                {blocks.map((block, index) => (
+                  <Block
+                    components={{
+                      ...defaultComponents,
+                      ...components,
+                    }}
+                    content={block}
+                    // biome-ignore lint/suspicious/noArrayIndexKey: "required"
+                    key={`${generatedId}-block-${index}`}
+                    rehypePlugins={rehypePlugins}
+                    remarkPlugins={remarkPlugins}
+                    shouldParseIncompleteMarkdown={
+                      shouldParseIncompleteMarkdown
+                    }
+                    urlTransform={urlTransform}
+                    {...props}
+                  />
+                ))}
+              </div>
+            </StreamdownRuntimeContext.Provider>
           </ControlsContext.Provider>
         </MermaidConfigContext.Provider>
       </ShikiThemeContext.Provider>
@@ -163,6 +165,7 @@ export const Streamdown = memo(
   },
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
-    prevProps.shikiTheme === nextProps.shikiTheme,
+    prevProps.shikiTheme === nextProps.shikiTheme &&
+    prevProps.isAnimating === nextProps.isAnimating
 );
 Streamdown.displayName = 'Streamdown';

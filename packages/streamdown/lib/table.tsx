@@ -1,6 +1,7 @@
 import { Button } from '@mantine/core';
 import { IconCheck, IconCopy, IconDownload } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { StreamdownRuntimeContext } from '..';
 import { save } from './utils';
 
 type TableData = {
@@ -107,6 +108,7 @@ export const TableCopyButton = ({
 }: TableCopyButtonProps) => {
   const [isCopied, setIsCopied] = useState(false);
   const timeoutRef = useRef(0);
+  const { isAnimating } = useContext(StreamdownRuntimeContext);
 
   const copyTableData = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (typeof window === 'undefined' || !navigator?.clipboard?.write) {
@@ -171,6 +173,7 @@ export const TableCopyButton = ({
       onClick={copyTableData}
       title={`Скопировать таблицу как ${format}`}
       className={className}
+      disabled={isAnimating}
     >
       {children ?? <Icon />}
     </Button>
@@ -194,6 +197,8 @@ export const TableDownloadButton = ({
   format = 'csv',
   filename,
 }: TableDownloadButtonProps) => {
+  const { isAnimating } = useContext(StreamdownRuntimeContext);
+
   const downloadTableData = (event: React.MouseEvent<HTMLButtonElement>) => {
     try {
       // Find the closest table element
@@ -248,18 +253,11 @@ export const TableDownloadButton = ({
 
   return (
     <button
-      className={className}
-      // className={cx(
-      //   // 'cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground',
-      //   css({
-      //     cursor: 'button',
-      //     p: '1',
-      //     c: 'fg.muted',
-      //     transition: 'all',
-      //     _hover: { c: 'fg' },
-      //   }),
-      //   className,
-      // )}
+      className={cn(
+        "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+        className
+      )}
+      disabled={isAnimating}
       onClick={downloadTableData}
       title={`Скопировать таблицу как ${format.toUpperCase()}`}
       type="button"
@@ -284,6 +282,7 @@ export const TableDownloadDropdown = ({
 }: TableDownloadDropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { isAnimating } = useContext(StreamdownRuntimeContext);
 
   const downloadTableData = (format: 'csv' | 'markdown') => {
     try {
@@ -338,18 +337,11 @@ export const TableDownloadDropdown = ({
       ref={dropdownRef}
     >
       <button
-        className={className}
-        // className={cx(
-        //   // 'cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground',
-        //   css({
-        //     cursor: 'pointer',
-        //     p: 1,
-        //     color: 'text.muted',
-        //     transition: 'all',
-        //     _hover: { color: 'text' },
-        //   }),
-        //   className,
-        // )}
+        className={cn(
+          "cursor-pointer p-1 text-muted-foreground transition-all hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        disabled={isAnimating}
         onClick={() => setIsOpen(!isOpen)}
         title="Скопировать таблицу"
         type="button"

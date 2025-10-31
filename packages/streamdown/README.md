@@ -19,7 +19,7 @@ Streamdown powers the [AI Elements Response](https://ai-sdk.dev/elements/compone
 - 🔢 **Math rendering** - LaTeX equations via KaTeX
 - 📈 **Mermaid diagrams** - Render Mermaid diagrams as code blocks with a button to render them
 - 🎯 **Code syntax highlighting** - Beautiful code blocks with Shiki
-- 🛡️ **Security-first** - Built on harden-react-markdown for safe rendering
+- 🛡️ **Security-first** - Built with rehype-harden for safe rendering
 - ⚡ **Performance optimized** - Memoized rendering for efficient updates
 
 ## Installation
@@ -120,7 +120,7 @@ export default function Page() {
       {messages.map(message => (
         <div key={message.id}>
           {message.parts.filter(part => part.type === 'text').map((part, index) => (
-            <Streamdown key={index}>{part.text}</Streamdown>
+            <Streamdown isAnimating={status === 'streaming'} key={index}>{part.text}</Streamdown>
           ))}
         </div>
       ))}
@@ -149,6 +149,51 @@ export default function Page() {
 }
 ```
 
+### Customizing Plugins
+
+When you need to override the default plugins (e.g., to configure security settings), you can import the default plugin configurations and selectively modify them:
+
+```tsx
+import { Streamdown, defaultRehypePlugins } from 'streamdown';
+import { harden } from 'rehype-harden';
+
+export default function Page() {
+  const markdown = `
+[Safe link](https://example.com)
+[Unsafe link](https://malicious-site.com)
+  `;
+
+  return (
+    <Streamdown
+      rehypePlugins={[
+        defaultRehypePlugins.raw,
+        defaultRehypePlugins.katex,
+        [
+          harden,
+          {
+            defaultOrigin: 'https://example.com',
+            allowedLinkPrefixes: ['https://example.com'],
+          },
+        ],
+      ]}
+    >
+      {markdown}
+    </Streamdown>
+  );
+}
+```
+
+The `defaultRehypePlugins` and `defaultRemarkPlugins` exports provide access to:
+
+**defaultRehypePlugins:**
+- `harden` - Security hardening with rehype-harden (configured with wildcard permissions by default)
+- `raw` - HTML support
+- `katex` - Math rendering with KaTeX
+
+**defaultRemarkPlugins:**
+- `gfm` - GitHub Flavored Markdown support
+- `math` - Math syntax support
+
 ## Props
 
 Streamdown accepts all the same props as react-markdown, plus additional streaming-specific options:
@@ -159,14 +204,12 @@ Streamdown accepts all the same props as react-markdown, plus additional streami
 | `parseIncompleteMarkdown` | `boolean` | `true` | Parse and style unterminated Markdown blocks |
 | `className` | `string` | - | CSS class for the container |
 | `components` | `object` | - | Custom component overrides |
-| `remarkPlugins` | `array` | `[remarkGfm, remarkMath]` | Remark plugins to use |
-| `rehypePlugins` | `array` | `[rehypeKatex]` | Rehype plugins to use |
-| `allowedImagePrefixes` | `array` | `['*']` | Allowed image URL prefixes |
-| `allowedLinkPrefixes` | `array` | `['*']` | Allowed link URL prefixes |
-| `defaultOrigin` | `string` | - | Default origin to use for relative URLs in links and images |
+| `rehypePlugins` | `array` | `[[harden, { allowedImagePrefixes: ["*"], allowedLinkPrefixes: ["*"], defaultOrigin: undefined }], rehypeRaw, [rehypeKatex, { errorColor: "var(--color-muted-foreground)" }]]` | Rehype plugins to use. Includes rehype-harden for security, rehype-raw for HTML support, and rehype-katex for math rendering by default |
+| `remarkPlugins` | `array` | `[[remarkGfm, {}], [remarkMath, { singleDollarTextMath: false }]]` | Remark plugins to use. Includes GitHub Flavored Markdown and math support by default |
 | `shikiTheme` | `[BundledTheme, BundledTheme]` | `['github-light', 'github-dark']` | The light and dark themes to use for code blocks |
 | `mermaidConfig` | `MermaidConfig` | - | Custom configuration for Mermaid diagrams (theme, colors, etc.) |
 | `controls` | `boolean \| { table?: boolean, code?: boolean, mermaid?: boolean }` | `true` | Control visibility of copy/download buttons |
+| `isAnimating` | `boolean` | `false` | Whether the component is currently animating. This is used to disable the copy and download buttons when the component is animating. |
 
 ## Architecture
 

@@ -472,6 +472,134 @@ const MemoSub = memo<SubProps>(
 );
 MemoSub.displayName = 'MarkdownSub';
 
+type SectionProps = WithNode<JSX.IntrinsicElements["section"]>;
+const MemoSection = memo<SectionProps>(
+  ({ children, className, node, ...props }: SectionProps) => {
+    // Check if this is a footnotes section
+    const isFootnotesSection = "data-footnotes" in props;
+
+    if (isFootnotesSection) {
+      // Filter out empty footnote list items (those with only the backref link)
+      // This happens during streaming when footnote definitions haven't fully arrived
+
+      // Helper to check if a node is empty (only contains backref)
+      const isEmptyFootnote = (listItem: React.ReactNode): boolean => {
+        if (!isValidElement(listItem)) return false;
+
+        const itemChildren = Array.isArray(listItem.props.children)
+          ? listItem.props.children
+          : [listItem.props.children];
+
+        // Check if all children are either whitespace or backref links
+        let hasContent = false;
+        let hasBackref = false;
+
+        for (const itemChild of itemChildren) {
+          if (!itemChild) continue;
+
+          if (typeof itemChild === "string") {
+            // If there's non-whitespace text, it has content
+            if (itemChild.trim() !== "") {
+              hasContent = true;
+            }
+          } else if (isValidElement(itemChild)) {
+            // Check if it's a backref link
+            if (itemChild.props?.["data-footnote-backref"] !== undefined) {
+              hasBackref = true;
+            } else {
+              // It's some other element (like <p>), which means it has content
+              // But we need to check if the <p> has actual content
+              const grandChildren = Array.isArray(itemChild.props.children)
+                ? itemChild.props.children
+                : [itemChild.props.children];
+
+              for (const grandChild of grandChildren) {
+                if (
+                  typeof grandChild === "string" &&
+                  grandChild.trim() !== ""
+                ) {
+                  hasContent = true;
+                  break;
+                }
+                if (isValidElement(grandChild)) {
+                  // If it's not a backref link, it's content
+                  if (
+                    grandChild.props?.["data-footnote-backref"] === undefined
+                  ) {
+                    hasContent = true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // It's empty if it only has a backref and no other content
+        return hasBackref && !hasContent;
+      };
+
+      // Process children to filter out empty footnotes
+      const processedChildren = Array.isArray(children)
+        ? children.map((child) => {
+            if (!isValidElement(child)) return child;
+
+            // If this is an <ol> containing footnote list items
+            if (child.type === MemoOl) {
+              const listChildren = Array.isArray(child.props.children)
+                ? child.props.children
+                : [child.props.children];
+
+              const filteredListChildren = listChildren.filter(
+                (listItem: React.ReactNode) => !isEmptyFootnote(listItem)
+              );
+
+              // If all footnotes are empty, return null
+              if (filteredListChildren.length === 0) {
+                return null;
+              }
+
+              // Clone the <ol> with filtered children
+              return {
+                ...child,
+                props: {
+                  ...child.props,
+                  children: filteredListChildren,
+                },
+              };
+            }
+
+            return child;
+          })
+        : children;
+
+      // Check if we filtered out all content
+      const hasAnyContent = Array.isArray(processedChildren)
+        ? processedChildren.some((child) => child !== null)
+        : processedChildren !== null;
+
+      if (!hasAnyContent) {
+        return null;
+      }
+
+      return (
+        <section className={className} {...props}>
+          {processedChildren}
+        </section>
+      );
+    }
+
+    // For non-footnotes sections, render normally
+    return (
+      <section className={className} {...props}>
+        {children}
+      </section>
+    );
+  },
+  (p, n) => sameClassAndNode(p, n)
+);
+MemoSection.displayName = "MarkdownSection";
+
 const CodeComponent = ({
   node,
   className,
@@ -577,8 +705,42 @@ const MemoImg = memo<
 
 MemoImg.displayName = 'MarkdownImg';
 
-export const components: Options['components'] = {
-  // @ts-expect-error
+type ParagraphProps = WithNode<JSX.IntrinsicElements["p"]>;
+const MemoParagraph = memo<ParagraphProps>(
+  ({ children, className, node, ...props }: ParagraphProps) => {
+    // Check if the paragraph contains only an image element
+    // If so, render the image directly without the <p> wrapper to avoid hydration errors
+    // (since our ImageComponent returns a <div>, which cannot be nested inside <p>)
+
+    // Handle both array and single child cases
+    const childArray = Array.isArray(children) ? children : [children];
+
+    // Filter out null/undefined/empty values
+    const validChildren = childArray.filter(
+      (child) => child !== null && child !== undefined && child !== ""
+    );
+
+    // Check if there's exactly one child and it's an img element
+    if (
+      validChildren.length === 1 &&
+      isValidElement(validChildren[0]) &&
+      (validChildren[0].props as { node?: MarkdownNode }).node?.tagName ===
+        "img"
+    ) {
+      return <>{children}</>;
+    }
+
+    return (
+      <p className={className} {...props}>
+        {children}
+      </p>
+    );
+  },
+  (p, n) => sameClassAndNode(p, n)
+);
+MemoParagraph.displayName = "MarkdownParagraph";
+
+export const components: Options["components"] = {
   ol: MemoOl,
   li: MemoLi,
   ul: MemoUl,
@@ -603,4 +765,6 @@ export const components: Options['components'] = {
   pre: ({ children }) => children,
   sup: MemoSup,
   sub: MemoSub,
+  p: MemoParagraph,
+  section: MemoSection,
 };

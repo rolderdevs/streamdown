@@ -24,37 +24,19 @@ const props = [
       "Custom React components to use for rendering markdown elements (e.g., custom heading, paragraph, code block components).",
   },
   {
-    name: "allowedImagePrefixes",
-    type: "string[]",
-    default: '["*"]',
-    description:
-      'Array of allowed URL prefixes for images. Use ["*"] to allow all images.',
-  },
-  {
-    name: "allowedLinkPrefixes",
-    type: "string[]",
-    default: '["*"]',
-    description:
-      'Array of allowed URL prefixes for links. Use ["*"] to allow all links.',
-  },
-  {
-    name: "defaultOrigin",
-    type: "string",
-    description: "Default origin to use for relative URLs in links and images.",
-  },
-  {
     name: "rehypePlugins",
     type: "array",
-    default: "[rehypeKatex]",
+    default:
+      '[[harden, { allowedImagePrefixes: ["*"], allowedLinkPrefixes: ["*"], defaultOrigin: undefined }], rehypeRaw, [rehypeKatex, { errorColor: "var(--color-muted-foreground)" }]]',
     description:
-      "Array of rehype plugins to use for processing HTML. Includes KaTeX for math rendering by default.",
+      "Array of rehype plugins to use for processing HTML. Includes rehype-harden for security, rehype-raw for HTML support, and rehype-katex for math rendering by default. You can import defaultRehypePlugins to access individual default plugins when overriding.",
   },
   {
     name: "remarkPlugins",
     type: "array",
-    default: "[remarkGfm, remarkMath]",
+    default: "[[remarkGfm, {}], [remarkMath, { singleDollarTextMath: false }]]",
     description:
-      "Array of remark plugins to use for processing markdown. Includes GitHub Flavored Markdown and math support by default.",
+      "Array of remark plugins to use for processing markdown. Includes GitHub Flavored Markdown and math support by default. You can import defaultRemarkPlugins to access individual default plugins when overriding.",
   },
   {
     name: "shikiTheme",
@@ -75,6 +57,13 @@ const props = [
     default: "true",
     description:
       "Control the visibility of copy and download buttons. Can be a boolean to show/hide all controls, or an object to selectively control buttons for tables, code blocks, and Mermaid diagrams.",
+  },
+  {
+    name: "isAnimating",
+    type: "boolean",
+    default: "false",
+    description:
+      "Whether the component is currently animating. This is used to disable the copy and download buttons when the component is animating.",
   },
 ];
 

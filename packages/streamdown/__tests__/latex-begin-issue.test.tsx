@@ -4,7 +4,7 @@ import { Streamdown } from "../index";
 import { parseMarkdownIntoBlocks } from "../lib/parse-blocks";
 import { parseIncompleteMarkdown } from "../lib/parse-incomplete-markdown";
 
-describe("LaTeX \\begin block issue #54", () => {
+describe("LaTeX \\begin block (#54)", () => {
   it("should correctly process blocks when split by marked lexer", () => {
     const content = `$$
 \\begin{pmatrix}
@@ -16,13 +16,10 @@ $$`;
 
     // Test how marked splits this content
     const blocks = parseMarkdownIntoBlocks(content);
-    console.log("Blocks:", blocks);
 
     // Test parseIncompleteMarkdown on each block
-    blocks.forEach((block, i) => {
-      const parsed = parseIncompleteMarkdown(block);
-      console.log(`Block ${i} original:`, JSON.stringify(block));
-      console.log(`Block ${i} parsed:`, JSON.stringify(parsed));
+    blocks.forEach((block) => {
+      parseIncompleteMarkdown(block);
     });
   });
 
@@ -45,7 +42,6 @@ $$`;
 
     // Check the text content doesn't have extra $$ appended
     const htmlContent = container.innerHTML;
-    console.log("HTML content:", htmlContent);
 
     // Should not contain $$$$ (four dollar signs in a row)
     expect(htmlContent).not.toContain("$$$$");
@@ -87,7 +83,6 @@ y
 
     // Should close the incomplete block with $$
     const htmlContent = container.innerHTML;
-    console.log("Incomplete block HTML:", htmlContent);
 
     // Check that the LaTeX is rendered
     const katexElements = container.querySelectorAll(".katex");

@@ -27,10 +27,6 @@ vi.mock("react-markdown", () => ({
   },
 }));
 
-vi.mock("harden-react-markdown", () => ({
-  default: (Component: any) => Component,
-}));
-
 vi.mock("rehype-katex", () => ({
   default: () => {},
 }));
@@ -74,47 +70,6 @@ describe("Streamdown Component", () => {
     const wrapper = container.firstElementChild;
     expect(wrapper).toBeTruthy();
     expect(wrapper?.children.length).toBe(0);
-  });
-
-  it("should pass through custom props", () => {
-    const { container } = render(
-      <Streamdown className="custom-class" data-custom="value">
-        Content
-      </Streamdown>
-    );
-    const wrapper = container.firstElementChild;
-    expect(wrapper?.getAttribute("class")).toContain("custom-class");
-    expect(wrapper?.getAttribute("data-custom")).toBe("value");
-  });
-
-  it("should use default allowed prefixes when not specified", () => {
-    const { container } = render(<Streamdown>Content</Streamdown>);
-    // These props are passed to child Block components, not to the wrapper div
-    const markdown = container.querySelector('[data-testid="markdown"]');
-    expect(markdown).toBeTruthy();
-  });
-
-  it("should use custom allowed prefixes when specified", () => {
-    const { container } = render(
-      <Streamdown
-        allowedImagePrefixes={["https://", "http://"]}
-        allowedLinkPrefixes={["https://", "mailto:"]}
-      >
-        Content
-      </Streamdown>
-    );
-    // These props are passed to child Block components, not to the wrapper div
-    const markdown = container.querySelector('[data-testid="markdown"]');
-    expect(markdown).toBeTruthy();
-  });
-
-  it("should pass defaultOrigin prop", () => {
-    const { container } = render(
-      <Streamdown defaultOrigin="https://example.com">Content</Streamdown>
-    );
-    // This prop is passed to child Block components, not to the wrapper div
-    const markdown = container.querySelector('[data-testid="markdown"]');
-    expect(markdown).toBeTruthy();
   });
 
   it("should merge custom components with defaults", () => {
